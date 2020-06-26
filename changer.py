@@ -22,6 +22,8 @@ from sms_services import *
 import process
 from utils import extract_mafile, extract_re_value
 
+import sms_services
+
 cert_human.enable_urllib3_patch()
 
 
@@ -32,6 +34,14 @@ if not os.path.exists('accounts.txt'):
 if not os.path.exists("database/imap-hosts.json"):
     with open("database/imap-hosts.json", "w") as f:
         f.write("{}")
+
+logging.getLogger("requests").setLevel(logging.ERROR)
+logger = logging.getLogger(__name__)
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+handler = logging.FileHandler('database/logs.txt', 'w', encoding='utf-8')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 class MainWindow:
@@ -320,21 +330,27 @@ class MainWindow:
         if self.repeat.get():
             repeat = True
         for account, mafile, email in zip(self.accounts, self.mafiles, self.email_boxes):
-            if repeat:
-                tzid, number = sms_service.get_number(country)
             login = extract_re_value(p, account, "login")
             password = extract_re_value(p, account, "password")
             mafile = load_steam_guard(mafile)
             email = extract_re_value(p2, email, "email")
             email_password = extract_re_value(p2, email, "epassword")
             imap_host = extract_re_value(p2, email, "imap")
-            try:
+            if repeat:
+                try:
+                    used_codes = process.change_numbers(login, password, self.sms_service,
+                                                        country, mafile, used_codes,
+                                                        email, email_password, imap_host,
+                                                        number, tzid)
+                except (OnlineSimError, SmsActivateError):
+                    tzid, number = self.sms_service.get_number(country)
+            else:
+                tzid, number = self.sms_service.get_number(country)
                 used_codes = process.change_numbers(login, password, self.sms_service,
                                                     country, mafile, used_codes,
                                                     email, email_password, imap_host,
                                                     number, tzid)
-            except (OnlineSimError, SmsActivateError):
-                tzid, number = sms_service.get_number(country)
+
                 
                  
 
@@ -343,6 +359,7 @@ class MainWindow:
         pass
 
     def add_log(self, message):
+        logger.info(message)
         self.log_box.insert(END, message)
         if not self.log_frozen:
             self.log_box.yview(END)
