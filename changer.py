@@ -28,8 +28,8 @@ def change_email(login, password, email, email_password, mafile, imap_host):
     WebDriverWait(driver, 60).until(EC.visibility_of_element_located((By.ID, "twofactorcode_entry")))
     driver.find_element_by_id("twofactorcode_entry").send_keys(code)
     driver.find_element_by_id("login_twofactorauth_buttonset_entercode").find_elements_by_css_selector("div[data-modalstate='submit']")[0].click()
+    WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CLASS_NAME, "help_page_title")))
     driver.find_element_by_id("wizard_contents").find_elements_by_tag_name("a")[2].click()
-
     mobile_client = SteamClient()
     mobile_client.mobile_login(login, password, mafile)
     confirmation_executor = ConfirmationExecutor('', mafile['identity_secret'],
@@ -45,7 +45,7 @@ def change_email(login, password, email, email_password, mafile, imap_host):
 
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.ID, "email_reset"))).send_keys(email)
     driver.find_element_by_css_selector("#change_email_area input").click()
-    code = fetch_email_token(email, email_password, imap_host, "guard")
+    code = fetch_email_token(email, email_password, imap_host, "email")
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.ID, "email_change_code"))).send_keys(code)
     driver.find_element_by_css_selector("#confirm_email_form > div.account_recovery_submit > input").click()
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.ID, "main_content")))
@@ -63,6 +63,7 @@ def change_email(login, password, email, email_password, mafile, imap_host):
     element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//form[@id='reset_phonenumber_form']")))
     element.find_element_by_tag_name("input").click()
     WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.ID, "main_phone_box")))
+
 
 with open("accounts.txt", "r") as f:
     accounts = [account.rstrip() for account in f.readlines()]
